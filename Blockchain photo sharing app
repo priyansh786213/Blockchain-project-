@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Photo Album</title>
+    
+    <style>
+        /* Import Google Font */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        /* General Styles */
+        body {
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Header */
+        header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px auto;
+            width: 80%;
+            box-shadow: 0px 5px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Container */
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            width: 50%;
+            margin: 20px auto;
+            border-radius: 12px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Upload Box */
+        .upload-box {
+            border: 2px dashed white;
+            border-radius: 12px;
+            padding: 30px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            transition: 0.3s;
+        }
+
+        .upload-box:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Upload Button */
+        .upload-btn {
+            margin-top: 15px;
+            padding: 12px 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            background: #ff8c00;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: #e07b00;
+        }
+
+        /* Section Title */
+        h2 {
+            margin-top: 30px;
+            font-size: 22px;
+            color: white;
+            text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Photo Album Grid */
+        .photo-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        /* Photo Blocks */
+        .photo-block {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            margin: 10px;
+            text-align: center;
+            max-width: 200px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .photo-block:hover {
+            transform: scale(1.05);
+            box-shadow: 0px 10px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Image Style */
+        .photo-block img {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        /* Blockchain Details */
+        .photo-block p {
+            font-size: 12px;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📸 Blockchain Photo Album</h1>
+    </header>
+
+    <div class="container">
+        <div class="upload-box" id="uploadBox">
+            <p>Drag & Drop or Click to Upload</p>
+            <input type="file" id="photoInput" accept="image/*" hidden>
+        </div>
+        <button class="upload-btn" onclick="uploadPhoto()">Upload Photo</button>
+    </div>
+
+    <h2>📂 Uploaded Photos</h2>
+    <div id="photoAlbum" class="photo-grid"></div>
+
+    <script>
+        class Block {
+            constructor(index, timestamp, imageHash, previousHash = '') {
+                this.index = index;
+                this.timestamp = timestamp;
+                this.imageHash = imageHash;
+                this.previousHash = previousHash;
+                this.hash = this.calculateHash();
+            }
+
+            calculateHash() {
+                return btoa(this.index + this.timestamp + this.imageHash + this.previousHash);
+            }
+        }
+
+        class Blockchain {
+            constructor() {
+                this.chain = [this.createGenesisBlock()];
+            }
+
+            createGenesisBlock() {
+                return new Block(0, new Date().toISOString(), "Genesis Block", "0");
+            }
+
+            getLatestBlock() {
+                return this.chain[this.chain.length - 1];
+            }
+
+            addBlock(imageHash) {
+                const newBlock = new Block(this.chain.length, new Date().toISOString(), imageHash, this.getLatestBlock().hash);
+                this.chain.push(newBlock);
+                return newBlock;
+            }
+        }
+
+        const photoBlockchain = new Blockchain();
+        const uploadBox = document.getElementById('uploadBox');
+
+        // Handle drag & drop
+        uploadBox.addEventListener("click", () => document.getElementById("photoInput").click());
+        uploadBox.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            uploadBox.style.background = "rgba(255, 255, 255, 0.3)";
+        });
+        uploadBox.addEventListener("dragleave", () => uploadBox.style.background = "rgba(255, 255, 255, 0.2)");
+        uploadBox.addEventListener("drop", (e) => {
+            e.preventDefault();
+            uploadBox.style.background = "rgba(255, 255, 255, 0.2)";
+            document.getElementById('photoInput').files = e.dataTransfer.files;
+            uploadPhoto();
+        });
+
+        function uploadPhoto() {
+            const input = document.getElementById('photoInput');
+            if (input.files.length === 0) {
+                alert("Please select an image.");
+                return;
+            }
+
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = function () {
+                const imageHash = btoa(reader.result);
+                const newBlock = photoBlockchain.addBlock(imageHash);
+                displayPhoto(file, newBlock);
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function displayPhoto(file, block) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const photoAlbum = document.getElementById('photoAlbum');
+
+                const div = document.createElement('div');
+                div.classList.add('photo-block');
+                div.innerHTML = `
+                    <img src="${e.target.result}" alt="Uploaded Photo">
+                    <p><strong>Block #:</strong> ${block.index}</p>
+                    <p><strong>Timestamp:</strong> ${block.timestamp}</p>
+                    <p><strong>Hash:</strong> ${block.hash.substring(0, 12)}...</p>
+                `;
+
+                photoAlbum.prepend(div);
+            };
+
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>
